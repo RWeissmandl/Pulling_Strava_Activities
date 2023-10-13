@@ -54,7 +54,7 @@ cur.execute("select start_date from activities order by start_date desc limit 1"
 db_latest_activity_date = cur.fetchone()
 strava_date_format = '%Y-%m-%dT%H:%M:%SZ'
 
-#for x in [0,1,2]:
+#Looping through each activity
 for x in range(len(response.json())):
     
     #compare dates of current activitites to db date
