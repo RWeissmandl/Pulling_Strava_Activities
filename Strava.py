@@ -62,7 +62,7 @@ for x in range(len(response.json())):
     strava_activity_date = response.json()[x]['start_date'] 
     strava_activity_datetime_format = datetime.strptime(strava_activity_date, strava_date_format).date()
     
-    if True: #strava_activity_datetime_format < db_latest_activity_date[0]: 
+    if strava_activity_datetime_format > db_latest_activity_date[0]: 
         #storing map as variable to trim in loop:
         if response.json()[x]['map']['summary_polyline'] != "":
             map = response.json()[x]['map']['summary_polyline']
