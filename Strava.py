@@ -1,6 +1,7 @@
 import requests
 import psycopg2
-from datetime import datetime
+from datetime import datetime, timedelta 
+import polyline
 import secrets_1
 
 #connect to database 
@@ -47,7 +48,7 @@ print("latest access token has been fetched from database: " + access_token[0])
 
 #Use access token to pull recent Strava activities
 my_headers = {'Authorization' : 'Bearer ' + access_token[0]}
-response = requests.get ("https://www.strava.com/api/v3/athlete/activities?per_page=8", headers=my_headers)
+response = requests.get ("https://www.strava.com/api/v3/athlete/activities?per_page=200", headers=my_headers)
 
 #Check db for latest activity date to only insert activities that are later than activites in db - avoids duplication
 cur.execute("select start_date from activities order by start_date desc limit 1")
@@ -61,18 +62,24 @@ for x in range(len(response.json())):
     strava_activity_date = response.json()[x]['start_date'] 
     strava_activity_datetime_format = datetime.strptime(strava_activity_date, strava_date_format).date()
     
-    if strava_activity_datetime_format > db_latest_activity_date[0]: 
+    if True: #strava_activity_datetime_format < db_latest_activity_date[0]: 
+        #storing map as variable to trim in loop:
+        if response.json()[x]['map']['summary_polyline'] != "":
+            map = response.json()[x]['map']['summary_polyline']
+            trimmed_map = polyline.decode(map)[12:-12]
+            trimmed_encoded_map = polyline.encode(trimmed_map)
+
         cur.execute("Insert into activities (name, distance, moving_time, total_elevation_gain, sport_type, id, start_date, map, average_speed) \
             values (%s, %s, %s, %s, %s, %s, %s, %s, %s)", 
             (response.json()[x]['name'],
              round((response.json()[x]['distance'])/1609,2), #convert distance from meters to miles, rounded to 2 decimal places
-             response.json()[x]['moving_time'],
-             response.json()[x]['total_elevation_gain'], 
+            str(timedelta(seconds = response.json()[x]['moving_time'])), #convert seconds to HMS
+            round((response.json()[x]['total_elevation_gain'])*3.28084), #convert meters to feet
              response.json()[x]['sport_type'],
              response.json()[x]['id'],
              response.json()[x]['start_date'],
-             response.json()[x]['map']['summary_polyline'],  
-             response.json()[x]['average_speed'],
+             trimmed_encoded_map,  
+             round(response.json()[x]['average_speed']*2.23694, 1), #convert seconds/meter to mins/mile
              ))
 conn.commit()
 
