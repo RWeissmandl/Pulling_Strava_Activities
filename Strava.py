@@ -48,7 +48,7 @@ print("latest access token has been fetched from database: " + access_token[0])
 
 #Use access token to pull recent Strava activities
 my_headers = {'Authorization' : 'Bearer ' + access_token[0]}
-response = requests.get ("https://www.strava.com/api/v3/athlete/activities?per_page=200", headers=my_headers)
+response = requests.get ("https://www.strava.com/api/v3/athlete/activities?per_page=20", headers=my_headers)
 
 #Check db for latest activity date to only insert activities that are later than activites in db - avoids duplication
 cur.execute("select start_date from activities order by start_date desc limit 1")
@@ -68,6 +68,7 @@ for x in range(len(response.json())):
             map = response.json()[x]['map']['summary_polyline']
             trimmed_map = polyline.decode(map)[12:-12]
             trimmed_encoded_map = polyline.encode(trimmed_map)
+        else: trimmed_encoded_map = response.json()[x]['map']['summary_polyline']
 
         cur.execute("Insert into activities (name, distance, moving_time, total_elevation_gain, sport_type, id, start_date, map, average_speed) \
             values (%s, %s, %s, %s, %s, %s, %s, %s, %s)", 
